@@ -24,13 +24,16 @@ void process()
 		is_arg = 0;
 		first_space = 0;
 		
-		while (c != '\n') {
-			if (c == '"') {
+		while (1) {
+			while (c == '"') {
 				is_arg = ~is_arg;
 				c = getchar();
-				continue;
+				first_space = 1;
 			}
-			if (is_arg || (c != ' ' && c != '\t')) {
+			if (is_arg || (c != ' ' && c != '\t' && c != '\n')) {
+				if (c == '\\') {
+					c = getchar();
+				}
 				vector_char_push_back(&vector, c);
 				first_space = 1;
 				c = getchar();
@@ -41,6 +44,9 @@ void process()
 				list_string_push(&list, vector_char_get_array(&vector));
 				vector_char_init(&vector);
 				first_space = 0;
+			}
+			if (c == '\n') {
+				break;
 			}
 			c = getchar();
 		}
