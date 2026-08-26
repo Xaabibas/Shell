@@ -5,14 +5,9 @@
 
 #include "vector_char.h"
 #include "vector_string.h"
-#include "list_string.h"
-
-
 
 void process() 
 {
-	list_string list;
-	list_string_init(&list); 
 	vector_char vector;
 	vector_string args;
 	char *command;
@@ -28,6 +23,7 @@ void process()
 			break;
 		}
 		vector_char_init(&vector);
+		vector_string_init(&args);
 		
 		is_arg = 0;
 		first_space = 0;
@@ -49,7 +45,7 @@ void process()
 			}
 			if (first_space) {
 				vector_char_push_back(&vector, 0);
-				list_string_push(&list, vector_char_get_array(&vector));
+				vector_string_push_back(&args, vector_char_get_array(&vector));
 				vector_char_init(&vector);
 				first_space = 0;
 			}
@@ -61,31 +57,20 @@ void process()
 		
 		if (first_space) {
 			vector_char_push_back(&vector, 0);
-			list_string_push(&list, vector_char_get_array(&vector));
+			vector_string_push_back(&args, vector_char_get_array(&vector));
 			vector_char_init(&vector);
 		}
 
 		if (is_arg) {
 			printf("Error: unmatched quotes\n");
-			while (!list_string_is_empty(&list)) {
-				char *string = list_string_front(&list);
-				list_string_pop(&list);
-				free(string);
+			while (!vector_string_is_empty(&args)) {
+				/* Free arrays */
 			}
 			vector_char_clear(&vector);
 			continue;
 		}
 			
-		vector_string_init(&args);
-		command = list_string_front(&list);
-
-		while (!list_string_is_empty(&list)) {
-			char *string = list_string_front(&list);
-
-			list_string_pop(&list);
-
-			vector_string_push_back(&args, string);
-		}
+		command = vector_string_get_array(&args)[0];
 
 		pid = fork();
 		if (pid == -1) {
