@@ -4,5 +4,6 @@
 #include "vector.h"
 
 MAKE_VECTOR_HEADER(vector_char, char);
+void vector_char_free(vector_char *vector);
 
 #endif
