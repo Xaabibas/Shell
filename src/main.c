@@ -6,90 +6,94 @@
 #include "vector_char.h"
 #include "vector_string.h"
 
-void process() 
-{
-	vector_char vector;
-	vector_string args;
-	char *command;
-	int pid;
-	int is_arg;
-	int first_space;
-	int c;
+int collect_line(vector_string *args)
+{	
+	printf("> ");
+	vector_char current_arg;
+	int c = getchar();
+	int is_arg = 0;
+	int first_space = 0;
 
+	if (c == EOF) {
+		return 0;
+	}
+	vector_char_init(&current_arg);
+	
 	while (1) {
-		printf("> ");
-		c = getchar();
-		if (c == EOF) {
-			break;
-		}
-		vector_char_init(&vector);
-		vector_string_init(&args);
-		
-		is_arg = 0;
-		first_space = 0;
-		
-		while (1) {
-			while (c == '"') {
-				is_arg = ~is_arg;
-				c = getchar();
-				first_space = 1;
-			}
-			if (is_arg || (c != ' ' && c != '\t' && c != '\n')) {
-				if (c == '\\') {
-					c = getchar();
-				}
-				vector_char_push_back(&vector, c);
-				first_space = 1;
-				c = getchar();
-				continue;
-			}
-			if (first_space) {
-				vector_char_push_back(&vector, 0);
-				vector_string_push_back(&args, vector_char_get_array(&vector));
-				vector_char_init(&vector);
-				first_space = 0;
-			}
-			if (c == '\n') {
-				break;
-			}
+		while (c == '"') {
+			is_arg = ~is_arg;
 			c = getchar();
+			first_space = 1;
 		}
-		
-		if (first_space) {
-			vector_char_push_back(&vector, 0);
-			vector_string_push_back(&args, vector_char_get_array(&vector));
-			vector_char_init(&vector);
-		}
-
-		if (is_arg) {
-			printf("Error: unmatched quotes\n");
-			while (!vector_string_is_empty(&args)) {
-				/* Free arrays */
+		if (is_arg || (c != ' ' && c != '\t' && c != '\n')) {
+			if (c == '\\') {
+				c = getchar();
 			}
-			vector_char_clear(&vector);
+			vector_char_push_back(&current_arg, c);
+			first_space = 1;
+			c = getchar();
 			continue;
 		}
-			
-		command = vector_string_get_array(&args)[0];
-
-		pid = fork();
-		if (pid == -1) {
-			perror("fork");
-			exit(1);	
+		if (first_space) {
+			vector_char_push_back(&current_arg, 0);
+			vector_string_push_back(args, vector_char_get_array(&current_arg));
+			vector_char_init(&current_arg);
+			first_space = 0;
 		}
-
-		if (pid == 0) {
-			execvp(command, vector_string_get_array(&args));
-			perror(command);
-			exit(1);
+		if (c == '\n') {
+			break;
 		}
-		wait(NULL);
-
-		vector_string_clear(&args);
-		vector_char_clear(&vector);
+		c = getchar();
 	}
 
-	
+	if (first_space) {
+		vector_char_push_back(&current_arg, 0);
+		vector_string_push_back(args, vector_char_get_array(&current_arg));
+		vector_char_init(&current_arg);
+	}
+
+	vector_char_free(&current_arg);
+	vector_string_push_back(args, NULL);
+	if (is_arg) {
+		return -1;
+	}
+	return 1;
+}
+
+void execute(char **args)
+{
+	int status;
+	int pid = fork();
+
+	if (pid == -1) {
+		perror("fork");
+		exit(1);
+	}
+	if (pid == 0) {
+		execvp(args[0], args);
+		perror(args[0]);
+		exit(1);
+	}
+	wait(&status);
+}
+
+void process() 
+{
+	vector_string args;
+	vector_string_init(&args);
+	int result;
+	char **array;
+
+	while ((result = collect_line(&args))) {
+		if (result == 1) {
+			array = vector_string_get_array(&args);
+			execute(array);	
+		} else if (result == -1) {
+			printf("Unmatched quetes\n");
+		}
+		vector_string_free(&args);
+		vector_string_init(&args);
+	}
 }
 
 int main()
