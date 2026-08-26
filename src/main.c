@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #include "vector_char.h"
+#include "vector_string.h"
 #include "list_string.h"
+
 
 
 void process() 
@@ -10,6 +14,9 @@ void process()
 	list_string list;
 	list_string_init(&list); 
 	vector_char vector;
+	vector_string args;
+	char *command;
+	int pid;
 	int is_arg;
 	int first_space;
 	int c;
@@ -21,6 +28,7 @@ void process()
 			break;
 		}
 		vector_char_init(&vector);
+		
 		is_arg = 0;
 		first_space = 0;
 		
@@ -67,16 +75,32 @@ void process()
 			vector_char_clear(&vector);
 			continue;
 		}
+			
+		vector_string_init(&args);
+		command = list_string_front(&list);
 
 		while (!list_string_is_empty(&list)) {
 			char *string = list_string_front(&list);
 
-			printf("[%s]\n", string);
-
 			list_string_pop(&list);
-			free(string);
+
+			vector_string_push_back(&args, string);
 		}
 
+		pid = fork();
+		if (pid == -1) {
+			perror("fork");
+			exit(1);	
+		}
+
+		if (pid == 0) {
+			execvp(command, vector_string_get_array(&args));
+			perror(command);
+			exit(1);
+		}
+		wait(NULL);
+
+		vector_string_clear(&args);
 		vector_char_clear(&vector);
 	}
 
