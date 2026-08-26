@@ -20,7 +20,8 @@ int NAME ## _push_back(NAME *vector, TYPE item); \
 int NAME ## _pop_back(NAME *vector, TYPE item); \
 TYPE * NAME ##_get_array(NAME *vector); \
 void NAME ## _clear(NAME *vector); \
-int NAME ## _is_empty(NAME *vector);
+int NAME ## _is_empty(NAME *vector); \
+int NAME ## _size(NAME *vector);
 
 #define MAKE_VECTOR_CODE(NAME, TYPE) \
 typedef struct NAME ## _tag { \
@@ -100,6 +101,11 @@ void NAME ## _clear(NAME *vector) \
 	vector->array = NULL; \
 	vector->size = 0; \
 	vector->capacity = 0; \
+} \
+\
+int NAME ## _size(NAME *vector) \
+{ \
+	return vector->size; \
 }
 
 #endif
