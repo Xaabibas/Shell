@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
 
+#include "cd.h"
 #include "vector_char.h"
 #include "vector_string.h"
+
 
 int collect_line(vector_string *args)
 {	
@@ -63,8 +66,14 @@ int collect_line(vector_string *args)
 void execute(char **args)
 {
 	int status;
-	int pid = fork();
+	int pid;
+	
+	if (0 == strcmp(args[0], "cd")) {
+		change_dir(args);
+		return;
+	}
 
+	pid = fork();
 	if (pid == -1) {
 		perror("fork");
 		exit(1);
@@ -87,9 +96,11 @@ void process()
 	while ((result = collect_line(&args))) {
 		if (result == 1) {
 			array = vector_string_get_array(&args);
-			execute(array);	
+			if (*array) {
+				execute(array);
+			}
 		} else if (result == -1) {
-			printf("Unmatched quetes\n");
+			printf("Error: Unmatched quetes\n");
 		}
 		vector_string_free(&args);
 		vector_string_init(&args);
