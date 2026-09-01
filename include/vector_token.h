@@ -6,4 +6,6 @@
 
 MAKE_VECTOR_HEADER(vector_token, token);
 
+void vector_token_free(vector_token *vector);
+
 #endif

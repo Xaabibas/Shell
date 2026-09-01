@@ -111,25 +111,41 @@ void process()
 void alt_process()
 {
 	vector_token tokens;
-	vector_token_init(&tokens);
-
 
 	int result;
 	char **array;
 
-	while (!(result = parse_line(&tokens))) {
-		if (result == 0) {
-			array = vector_token_get_array(&tokens)[0].str;
-			if (*array) {
-				execute(array);
-			}
+	while (1) {
+		vector_token_init(&tokens);
+		printf("> ");
+		result = parse_line(&tokens);
+		switch (result) {
+			case 0:
+				if (!vector_token_size(&tokens)) {
+					break;
+				}
+				array = vector_token_get_array(&tokens)[0].str;
+				if (*array) {
+					execute(array);
+				}
+				break;
+			case 1:
+				printf("Error: Invalid syntax\n");
+				break;
+			case 2:
+				printf("Error: Unmatched quetes\n");
+				break;
 		}
+		if (result == -1) {
+			break;
+		}
+		vector_token_free(&tokens);
 	}
 }
 
 int main()
 {
-	process();
+	alt_process();
 
 	return 0;
 }

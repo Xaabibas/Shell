@@ -17,7 +17,7 @@ typedef struct NAME ## _tag { \
 } NAME; \
 int NAME ## _init(NAME *vector); \
 int NAME ## _push_back(NAME *vector, TYPE item); \
-int NAME ## _pop_back(NAME *vector, TYPE item); \
+int NAME ## _pop_back(NAME *vector); \
 TYPE * NAME ##_get_array(NAME *vector); \
 void NAME ## _clear(NAME *vector); \
 int NAME ## _is_empty(NAME *vector); \
