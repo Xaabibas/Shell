@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 
 #include "cd.h"
+#include "types.h"
 #include "tokenizer.h"
 #include "vector_char.h"
 #include "vector_string.h"
@@ -64,13 +65,13 @@ int collect_line(vector_string *args)
 	return 1;
 }
 
-void execute(char **args)
+void execute(char **argv)
 {
 	int status;
-	int pid;
+	int pid, p;
 	
-	if (0 == strcmp(args[0], "cd")) {
-		change_dir(args);
+	if (0 == strcmp(argv[0], "cd")) {
+		change_dir(argv);
 		return;
 	}
 
@@ -80,11 +81,63 @@ void execute(char **args)
 		exit(1);
 	}
 	if (pid == 0) {
-		execvp(args[0], args);
-		perror(args[0]);
+		execvp(argv[0], argv);
+		perror(argv[0]);
 		exit(1);
 	}
-	wait(&status);
+	do {
+		p = wait(&status);
+	} while (p != pid);
+}
+
+void deamon_execute(char **argv)
+{
+	int pid;
+
+	pid = fork();
+	if (pid == -1) {
+		perror("fork");
+		exit(1);
+	}
+	if (pid == 0) {
+		if (0 == strcmp(argv[0], "cd")) {
+			change_dir(argv);
+			exit(0);
+		}
+		execvp(argv[0], argv);
+		perror(argv[0]);
+		exit(1);
+	}
+	printf("[%d] ", pid);
+       	while (*argv) {
+		printf("%s ", *argv++);
+	}
+	printf(" - started\n");
+}
+
+void alt_execute(token *tokens, int size)
+{
+	char **argv;
+	int type;
+	int i;
+
+	for (i = 0; i < size; i++) {
+		type = TEXT;
+		argv = tokens[i].str;
+		if (++i != size) {
+			type = tokens[i].type;
+		}
+		switch (type) {
+			case TEXT:
+				execute(argv);
+				break;
+			case DEAMON:
+				deamon_execute(argv);
+				break;
+			default:
+				printf("Not implemented yet\n");
+		}
+	}
 }
 
 void process() 
@@ -113,7 +166,6 @@ void alt_process()
 	vector_token tokens;
 
 	int result;
-	char **array;
 
 	while (1) {
 		vector_token_init(&tokens);
@@ -124,10 +176,7 @@ void alt_process()
 				if (!vector_token_size(&tokens)) {
 					break;
 				}
-				array = vector_token_get_array(&tokens)[0].str;
-				if (*array) {
-					execute(array);
-				}
+				alt_execute(vector_token_get_array(&tokens), vector_token_size(&tokens));
 				break;
 			case 1:
 				printf("Error: Invalid syntax\n");
