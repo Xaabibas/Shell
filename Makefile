@@ -7,7 +7,7 @@ INC_DIR = include
 LIB_DIR = lib
 BUILD_DIR = build
 
-SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/vector_char.c $(SRC_DIR)/vector_string.c $(SRC_DIR)/list_string.c $(SRC_DIR)/cd.c
+SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/vector_char.c $(SRC_DIR)/vector_string.c $(SRC_DIR)/vector_token.c $(SRC_DIR)/list_string.c $(SRC_DIR)/cd.c $(SRC_DIR)/tokenizer.c
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 TARGET = program

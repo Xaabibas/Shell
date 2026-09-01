@@ -5,9 +5,10 @@
 #include <sys/wait.h>
 
 #include "cd.h"
+#include "tokenizer.h"
 #include "vector_char.h"
 #include "vector_string.h"
-
+#include "vector_token.h"
 
 int collect_line(vector_string *args)
 {	
@@ -104,6 +105,25 @@ void process()
 		}
 		vector_string_free(&args);
 		vector_string_init(&args);
+	}
+}
+
+void alt_process()
+{
+	vector_token tokens;
+	vector_token_init(&tokens);
+
+
+	int result;
+	char **array;
+
+	while (!(result = parse_line(&tokens))) {
+		if (result == 0) {
+			array = vector_token_get_array(&tokens)[0].str;
+			if (*array) {
+				execute(array);
+			}
+		}
 	}
 }
 
