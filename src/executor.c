@@ -1,0 +1,86 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+#include "cd.h"
+#include "types.h"
+#include "tokenizer.h"
+#include "vector_token.h"
+
+
+static void default_execute(char **argv)
+{
+	int status;
+	int pid, p;
+	
+	if (0 == strcmp(argv[0], "cd")) {
+		change_dir(argv);
+		return;
+	}
+
+	pid = fork();
+	if (pid == -1) {
+		perror("fork");
+		exit(1);
+	}
+	if (pid == 0) {
+		execvp(argv[0], argv);
+		perror(argv[0]);
+		exit(1);
+	}
+	do {
+		p = wait(&status);
+	} while (p != pid);
+}
+ 
+static void deamon_execute(char **argv)
+{
+	int pid;
+
+	pid = fork();
+	if (pid == -1) {
+		perror("fork");
+		exit(1);
+	}
+	if (pid == 0) {
+		if (0 == strcmp(argv[0], "cd")) {
+			change_dir(argv);
+			exit(0);
+		}
+		execvp(argv[0], argv);
+		perror(argv[0]);
+		exit(1);
+	}
+	printf("[%d] ", pid);
+       	while (*argv) {
+		printf("%s ", *argv++);
+	}
+	printf(" - started\n");
+}
+
+void execute(token *tokens, int size)
+{
+	char **argv;
+	int type;
+	int i;
+
+	for (i = 0; i < size; i++) {
+		type = TEXT;
+		argv = tokens[i].str;
+		if (++i != size) {
+			type = tokens[i].type;
+		}
+		switch (type) {
+			case TEXT:
+				default_execute(argv);
+				break;
+			case DEAMON:
+				deamon_execute(argv);
+				break;
+			default:
+				printf("Not implemented yet\n");
+		}
+	}
+}
