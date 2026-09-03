@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,9 +61,37 @@ static void deamon_execute(char **argv)
 	printf(" - started\n");
 }
 
+static void out_execute(char **argv, char *file)
+{
+	int status;
+	int pid, p;
+	int fd = open(file, O_CREAT | O_WRONLY | O_TRUNC, 0666);
+	if (fd == -1) {
+		perror(file);
+		return;
+	}
+	pid = fork();
+	if (pid == -1) {
+		perror("fork");
+		exit(1);
+	}
+	if (pid == 0) {
+		dup2(fd, 1);
+		close(fd);
+		execvp(argv[0], argv);
+		perror(argv[0]);
+		exit(1);
+	}
+	close(fd);
+	do {
+		p = wait(&status);
+	} while (p != pid);
+}
+
 void execute(token *tokens, int size)
 {
 	char **argv;
+	char *file;
 	int type;
 	int i;
 
@@ -78,6 +107,10 @@ void execute(token *tokens, int size)
 				break;
 			case DEAMON:
 				deamon_execute(argv);
+				break;
+			case OUT:
+				file = tokens[++i].str[0];
+				out_execute(argv, file);
 				break;
 			default:
 				printf("Not implemented yet\n");
