@@ -88,6 +88,33 @@ static void out_execute(char **argv, char *file)
 	} while (p != pid);
 }
 
+static void std_change_execute(char **argv, char *file, int std, int flags)
+{
+	int status;
+	int pid, p;
+	int fd = open(file, flags, 0666);
+	if (fd == -1) {
+		perror(file);
+		return;
+	}
+	pid = fork();
+	if (pid == -1) {
+		perror("fork");
+		exit(1);
+	}
+	if (pid == 0) {
+		dup2(fd, std);
+		close(fd);
+		execvp(argv[0], argv);
+		perror(argv[0]);
+		exit(1);
+	}
+	close(fd);
+	do {
+		p = wait(&status);
+	} while (p != pid);
+}
+
 void execute(token *tokens, int size)
 {
 	char **argv;
@@ -110,7 +137,15 @@ void execute(token *tokens, int size)
 				break;
 			case OUT:
 				file = tokens[++i].str[0];
-				out_execute(argv, file);
+				std_change_execute(argv, file, 1, O_CREAT | O_WRONLY | O_TRUNC);
+				break;
+			case IN:
+				file = tokens[++i].str[0];
+				std_change_execute(argv, file, 0, O_RDONLY);
+				break;
+			case APPEND:
+				file = tokens[++i].str[0];
+				std_change_execute(argv, file, 1, O_CREAT | O_WRONLY | O_APPEND);
 				break;
 			default:
 				printf("Not implemented yet\n");

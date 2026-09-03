@@ -34,6 +34,7 @@ static void push_spec(vector_token *tokens, int c)
 				case '>':
 					t.type = APPEND;
 			}
+			vector_token_push_back(tokens, t);
 			return;
 		} else {
 			ungetc(next, stdin);
