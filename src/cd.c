@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 
@@ -20,7 +21,11 @@ void change_dir(char **args)
 	if (c == 1) {
 		path = getenv("HOME");
 	} else if (c == 2) {
-		path = args[1];
+		if (0 == strcmp(args[1], "~")) {
+			path = getenv("HOME");
+		} else {
+			path = args[1];
+		}
 	} else {
 		printf("Error: Too much arguments\n");
 		return;
