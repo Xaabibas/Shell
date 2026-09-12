@@ -4,6 +4,6 @@
 #include "token.h"
 
 
-void execute(token *tokens, int size);
+void execute(int size, token *tokens);
 
 #endif

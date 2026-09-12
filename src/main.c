@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+#include "analyzer.h"
 #include "executor.h"
 #include "types.h"
 #include "tokenizer.h"
@@ -25,7 +26,10 @@ void process()
 				if (!vector_token_size(&tokens)) {
 					break;
 				}
-				execute(vector_token_get_array(&tokens), vector_token_size(&tokens));
+				if (!analyze(vector_token_size(&tokens), vector_token_get_array(&tokens))) {
+					break;
+				}
+				execute(vector_token_size(&tokens), vector_token_get_array(&tokens));
 				break;
 			case 1:
 				printf("Error: Invalid syntax\n");

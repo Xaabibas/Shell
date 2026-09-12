@@ -11,32 +11,7 @@
 #include "vector_token.h"
 
 
-static void default_execute(char **argv)
-{
-	int status;
-	int pid, p;
-	
-	if (0 == strcmp(argv[0], "cd")) {
-		change_dir(argv);
-		return;
-	}
-
-	pid = fork();
-	if (pid == -1) {
-		perror("fork");
-		exit(1);
-	}
-	if (pid == 0) {
-		execvp(argv[0], argv);
-		perror(argv[0]);
-		exit(1);
-	}
-	do {
-		p = wait(&status);
-	} while (p != pid);
-}
- 
-static void deamon_execute(char **argv)
+static void deamon_execute(char **argv, int fd_in, int fd_out)
 {
 	int pid;
 
@@ -50,9 +25,23 @@ static void deamon_execute(char **argv)
 			change_dir(argv);
 			exit(0);
 		}
+		if (fd_in) {
+			dup2(fd_in, 0);
+			close(fd_in);
+		}
+		if (fd_out) {
+			dup2(fd_out, 1);
+			close(fd_out);
+		}
 		execvp(argv[0], argv);
 		perror(argv[0]);
 		exit(1);
+	}
+	if (fd_in) {
+		close(fd_in);
+	}
+	if (fd_out) {
+		close(fd_out);
 	}
 	printf("[%d] ", pid);
        	while (*argv) {
@@ -61,94 +50,86 @@ static void deamon_execute(char **argv)
 	printf(" - started\n");
 }
 
-static void out_execute(char **argv, char *file)
+static void default_execute(char **argv, int fd_in, int fd_out)
 {
 	int status;
 	int pid, p;
-	int fd = open(file, O_CREAT | O_WRONLY | O_TRUNC, 0666);
-	if (fd == -1) {
-		perror(file);
+
+	if (0 == strcmp(argv[0], "cd")) {
+		change_dir(argv);
 		return;
 	}
+
 	pid = fork();
 	if (pid == -1) {
 		perror("fork");
 		exit(1);
 	}
 	if (pid == 0) {
-		dup2(fd, 1);
-		close(fd);
+		if (fd_in) {
+			dup2(fd_in, 0);
+			close(fd_in);
+		}
+		if (fd_out) {
+			dup2(fd_out, 1);
+			close(fd_out);
+		}
 		execvp(argv[0], argv);
 		perror(argv[0]);
 		exit(1);
 	}
-	close(fd);
+	if (fd_in) {
+		close(fd_in);
+	}
+	if (fd_out) {
+		close(fd_out);
+	}
 	do {
 		p = wait(&status);
 	} while (p != pid);
 }
 
-static void std_change_execute(char **argv, char *file, int std, int flags)
-{
-	int status;
-	int pid, p;
-	int fd = open(file, flags, 0666);
-	if (fd == -1) {
-		perror(file);
-		return;
-	}
-	pid = fork();
-	if (pid == -1) {
-		perror("fork");
-		exit(1);
-	}
-	if (pid == 0) {
-		dup2(fd, std);
-		close(fd);
-		execvp(argv[0], argv);
-		perror(argv[0]);
-		exit(1);
-	}
-	close(fd);
-	do {
-		p = wait(&status);
-	} while (p != pid);
-}
-
-void execute(token *tokens, int size)
+void execute(int size, token *tokens)
 {
 	char **argv;
 	char *file;
 	int type;
 	int i;
+	int fd_in, fd_out;
 
 	for (i = 0; i < size; i++) {
 		type = TEXT;
 		argv = tokens[i].str;
-		if (++i != size) {
+		fd_in = 0;
+		fd_out = 0;
+
+		while (type != DEAMON && ++i < size) {
 			type = tokens[i].type;
+
+			switch (type) {
+				case DEAMON:
+					break;
+				case OUT:
+					file= tokens[++i].str[0];
+					fd_out = open(file, O_CREAT | O_WRONLY | O_TRUNC, 0666);
+					break;
+				case IN:
+					file = tokens[++i].str[0];
+					fd_in = open(file, O_RDONLY, 0666);
+					break;
+				case APPEND:
+					file = tokens[++i].str[0];
+					fd_out = open(file, O_CREAT | O_WRONLY | O_APPEND, 0666);
+					break;
+				default:
+					printf("Not implemented yet\n");
+			}
 		}
-		switch (type) {
-			case TEXT:
-				default_execute(argv);
-				break;
-			case DEAMON:
-				deamon_execute(argv);
-				break;
-			case OUT:
-				file = tokens[++i].str[0];
-				std_change_execute(argv, file, 1, O_CREAT | O_WRONLY | O_TRUNC);
-				break;
-			case IN:
-				file = tokens[++i].str[0];
-				std_change_execute(argv, file, 0, O_RDONLY);
-				break;
-			case APPEND:
-				file = tokens[++i].str[0];
-				std_change_execute(argv, file, 1, O_CREAT | O_WRONLY | O_APPEND);
-				break;
-			default:
-				printf("Not implemented yet\n");
+
+		if (type == DEAMON) {
+			deamon_execute(argv, fd_in, fd_out);
+		} else {
+			default_execute(argv, fd_in, fd_out);
 		}
 	}
 }
