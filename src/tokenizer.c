@@ -42,7 +42,7 @@ static void push_spec(vector_token *tokens, int c)
 	}
 	switch (c) {
 		case '&':
-			t.type = DEAMON;
+			t.type = DAEMON;
 			break;
 		case '>':
 			t.type = OUT;

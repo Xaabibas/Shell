@@ -2,7 +2,7 @@
 #define TYPES_H
 
 #define TEXT 0
-#define DEAMON 1
+#define DAEMON 1
 #define OUT 2
 #define IN 3
 #define APPEND 4

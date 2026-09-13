@@ -11,7 +11,7 @@
 #include "vector_token.h"
 
 
-static void deamon_execute(char **argv, int fd_in, int fd_out)
+static void daemon_execute(char **argv, int fd_in, int fd_out)
 {
 	int pid;
 
@@ -109,11 +109,11 @@ void execute(int size, token *tokens)
 		fd_in = -1;
 		fd_out = -1;
 
-		while (type != DEAMON && ++i < size) {
+		while (type != DAEMON && ++i < size) {
 			type = tokens[i].type;
 
 			switch (type) {
-				case DEAMON:
+				case DAEMON:
 					break;
 				case OUT:
 					file= tokens[++i].str[0];
@@ -144,8 +144,8 @@ void execute(int size, token *tokens)
 			}
 		}
 
-		if (type == DEAMON) {
-			deamon_execute(argv, fd_in, fd_out);
+		if (type == DAEMON) {
+			daemon_execute(argv, fd_in, fd_out);
 		} else {
 			default_execute(argv, fd_in, fd_out);
 		}
