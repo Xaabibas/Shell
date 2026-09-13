@@ -74,7 +74,7 @@ static void default_execute(char **argv, int fd_in, int fd_out)
 		close(fd_in);
 		}
 		if (fd_out != -1) {
- 			if (dup2(fd_out, STDIN_FILENO) == -1) {
+ 			if (dup2(fd_out, STDOUT_FILENO) == -1) {
         			perror("dup2");
         			exit(1);
     			}
@@ -84,10 +84,10 @@ static void default_execute(char **argv, int fd_in, int fd_out)
 		perror(argv[0]);
 		exit(1);
 	}
-	if (fd_in) {
+	if (fd_in != -1) {
 		close(fd_in);
 	}
-	if (fd_out) {
+	if (fd_out != -1) {
 		close(fd_out);
 	}
 	do {
