@@ -66,13 +66,19 @@ static void default_execute(char **argv, int fd_in, int fd_out)
 		exit(1);
 	}
 	if (pid == 0) {
-		if (fd_in) {
-			dup2(fd_in, 0);
-			close(fd_in);
+		if (fd_in != -1) {
+ 			if (dup2(fd_in, STDIN_FILENO) == -1) {
+        			perror("dup2");
+        			exit(1);
+    			}
+		close(fd_in);
 		}
-		if (fd_out) {
-			dup2(fd_out, 1);
-			close(fd_out);
+		if (fd_out != -1) {
+ 			if (dup2(fd_out, STDIN_FILENO) == -1) {
+        			perror("dup2");
+        			exit(1);
+    			}
+		close(fd_out);
 		}
 		execvp(argv[0], argv);
 		perror(argv[0]);
@@ -100,8 +106,8 @@ void execute(int size, token *tokens)
 	for (i = 0; i < size; i++) {
 		type = TEXT;
 		argv = tokens[i].str;
-		fd_in = 0;
-		fd_out = 0;
+		fd_in = -1;
+		fd_out = -1;
 
 		while (type != DEAMON && ++i < size) {
 			type = tokens[i].type;
@@ -112,14 +118,26 @@ void execute(int size, token *tokens)
 				case OUT:
 					file= tokens[++i].str[0];
 					fd_out = open(file, O_CREAT | O_WRONLY | O_TRUNC, 0666);
+					if (fd_out == -1) {
+						perror(file);
+						return;
+					}
 					break;
 				case IN:
 					file = tokens[++i].str[0];
 					fd_in = open(file, O_RDONLY, 0666);
+					if (fd_in == -1) {
+						perror(file);
+						return;
+					}
 					break;
 				case APPEND:
 					file = tokens[++i].str[0];
 					fd_out = open(file, O_CREAT | O_WRONLY | O_APPEND, 0666);
+					if (fd_out == -1) {
+						perror(file);
+						return;
+					}
 					break;
 				default:
 					printf("Not implemented yet\n");
